@@ -17,11 +17,14 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
-    "@monaco-editor/react": "^4.7.0",
+    "@mui/icons-material": "^7.1.1",
     "@mui/material": "^7.1.1",
+    "@tinymce/tinymce-react": "^6.2.1",
     "openai": "^5.1.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "sass": "^1.89.1",
+    "tinymce": "^7.9.1",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

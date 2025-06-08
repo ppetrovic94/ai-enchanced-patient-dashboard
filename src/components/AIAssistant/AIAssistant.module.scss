@@ -1,0 +1,105 @@
+.container {
+    padding: 16px;
+    margin-bottom: 16px;
+    max-width: 100%;
+    overflow: hidden;
+
+    @media (min-width: 600px) {
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.generateDraftButton {
+    margin-top: 16px !important;
+}
+
+.promptSection {
+    margin-bottom: 24px;
+}
+
+.promptInput {
+    margin-bottom: 16px;
+}
+
+.generateButton {
+    margin-right: 16px;
+}
+
+.divider {
+    margin: 16px 0;
+}
+
+.loadingContainer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.errorAlert {
+    margin: 16px 0;
+}
+
+.resultContainer {
+    margin-top: 24px;
+}
+
+.resultHeader {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: stretch;
+    margin-bottom: 16px;
+    gap: 8px;
+
+    @media (min-width: 600px) {
+        flex-direction: row;
+        align-items: center;
+    }
+}
+
+.resultTitle {
+    margin-bottom: 8px;
+
+    @media (min-width: 600px) {
+        margin-bottom: 0;
+    }
+}
+
+.buttonContainer {
+    display: flex;
+    gap: 8px;
+    flex-direction: column;
+    width: 100%;
+
+    @media (min-width: 600px) {
+        flex-direction: row;
+        width: auto;
+    }
+}
+
+.responsiveButton {
+    width: 100%;
+
+    @media (min-width: 600px) {
+        width: auto;
+    }
+}
+
+.editorContainer {
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 4px;
+    background-color: #fafafa;
+
+    :global(.tox .tox-editor-header) {
+        border: none !important;
+    }
+}

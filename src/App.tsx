@@ -1,100 +1,162 @@
-import { useState } from 'react';
-import { Container, Button, Box } from '@mui/material';
-import Editor from '@monaco-editor/react';
-import { create } from 'zustand';
-import { DndContext, useDraggable, useDroppable } from '@dnd-kit/core';
-import OpenAI from 'openai';
+import { useEffect, useCallback, useState } from 'react';
+import {
+  AppBar,
+  Toolbar,
+  Typography,
+  Button,
+  Box,
+  Fab,
+  ThemeProvider,
+  createTheme,
+  CssBaseline,
+  Alert,
+  Snackbar
+} from '@mui/material';
+import { Add } from '@mui/icons-material';
 
-const useStore = create<{ count: number; increment: () => void }>((set) => ({
-  count: 0,
-  increment: () => set((state) => ({ count: state.count + 1 })),
-}));
+import { useReportStore } from './store/reportStore';
 
-const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY || '',
-  dangerouslyAllowBrowser: true
+import { generateDraft, summarizeContent } from './openai/prompts';
+
+import { SearchFilter, ReportList, ReportForm, AIAssistant } from './components';
+
+import styles from './App.module.scss';
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+  },
 });
 
+
+
 function App() {
-  const [editorContent, setEditorContent] = useState('console.log("Hello Monaco!");');
-  const [aiResult, setAiResult] = useState<string>('Not tested');
-  const { count, increment } = useStore();
+  const { initializeStore, selectReport } = useReportStore();
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [draftContent, setDraftContent] = useState<string>('');
+  const [notification, setNotification] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info';
+  }>({ open: false, message: '', severity: 'success' });
 
-  const testOpenAI = async () => {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+  useEffect(() => {
+    initializeStore();
+  }, [initializeStore]);
 
-    if (!apiKey) {
-      setAiResult(`Error: No API key`);
-      return;
-    }
-
-    try {
-      setAiResult('Testing...');
-
-      const response = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: "Say hello" }],
-        max_tokens: 10,
-      });
-      setAiResult(response.choices[0]?.message?.content || 'No response');
-    } catch (error) {
-      setAiResult('Error: ' + (error as Error).message);
-    }
-  };
-
-  const DraggableItem = () => {
-    const { attributes, listeners, setNodeRef } = useDraggable({
-      id: 'draggable',
+  useEffect(() => {
+    const unsubscribe = useReportStore.subscribe((state, prevState) => {
+      if (state.reports.length !== prevState.reports.length) {
+        if (state.reports.length > prevState.reports.length) {
+          setNotification({
+            open: true,
+            message: 'Report created successfully!',
+            severity: 'success'
+          });
+        }
+      }
     });
 
-    return (
-      <button ref={setNodeRef} {...listeners} {...attributes}>
-        Drag me
-      </button>
-    );
-  };
+    return unsubscribe;
+  }, []);
 
-  const DroppableArea = ({ children }: { children: React.ReactNode }) => {
-    const { setNodeRef } = useDroppable({
-      id: 'droppable',
-    });
+  const handleCreateNew = useCallback(() => {
+    selectReport(null);
+    setDraftContent('');
+    setIsFormOpen(true);
+  }, [selectReport]);
 
-    return (
-      <div ref={setNodeRef}>
-        {children}
-      </div>
-    );
-  };
+  const handleEditReport = useCallback(() => {
+    setDraftContent('');
+    setIsFormOpen(true);
+  }, []);
+
+  const handleFormClose = useCallback(() => {
+    setIsFormOpen(false);
+    setDraftContent('');
+  }, []);
+
+  const handleSaveAsDraft = useCallback((content: string) => {
+    selectReport(null);
+    setDraftContent(content);
+    setIsFormOpen(true);
+  }, [selectReport]);
+
+  const handleGenerateDraft = useCallback(async (prompt: string): Promise<string> => {
+    return await generateDraft(prompt);
+  }, []);
+
+  const handleSummarizeContent = useCallback(async (content: string): Promise<string> => {
+    return await summarizeContent(content);
+  }, []);
+
+  const handleCloseNotification = useCallback(() => {
+    setNotification(prev => ({ ...prev, open: false }));
+  }, []);
 
   return (
-    <Container>
-      <Box>
-        <Button onClick={increment}>Count: {count}</Button>
-      </Box>
-
-      <Box>
-        <Editor
-          height="200px"
-          value={editorContent}
-          onChange={(value) => setEditorContent(value || '')}
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box className={styles.appContainer}>
+        <AppBar position="static" elevation={1} className={styles.appBar}>
+          <Toolbar>
+            <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+              AI-Enhanced Patient Dashboard
+            </Typography>
+            <Button
+              color="inherit"
+              startIcon={<Add />}
+              onClick={handleCreateNew}
+            >
+              New Report
+            </Button>
+          </Toolbar>
+        </AppBar>
+        <Box className={styles.mainContent}>
+          <AIAssistant
+            onGenerateDraft={handleGenerateDraft}
+            onSummarizeContent={handleSummarizeContent}
+            onSaveAsDraft={handleSaveAsDraft}
+          />
+          <SearchFilter />
+          <Box className={styles.reportListContainer}>
+            <ReportList onReportEdit={handleEditReport} />
+          </Box>
+          <Fab
+            color="primary"
+            aria-label="add"
+            className={styles.fab}
+            onClick={handleCreateNew}
+          >
+            <Add />
+          </Fab>
+        </Box>
+        <ReportForm
+          open={isFormOpen}
+          onClose={handleFormClose}
+          draftContent={draftContent}
         />
+        <Snackbar
+          open={notification.open}
+          autoHideDuration={6000}
+          onClose={handleCloseNotification}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        >
+          <Alert
+            onClose={handleCloseNotification}
+            severity={notification.severity}
+            sx={{ width: '100%' }}
+          >
+            {notification.message}
+          </Alert>
+        </Snackbar>
       </Box>
-
-      <Box>
-        <DndContext>
-          <DroppableArea>
-            <div>
-              <DraggableItem />
-            </div>
-          </DroppableArea>
-        </DndContext>
-      </Box>
-
-      <Box>
-        <Button onClick={testOpenAI}>Test OpenAI</Button>
-        <div>Result: {aiResult}</div>
-      </Box>
-    </Container>
+    </ThemeProvider>
   );
 }
 
